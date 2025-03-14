@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pie Chart with Input Values</title>
+    <style>
+        body {
+            font-family: 'Trebuchet MS', Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+            align-items: center;
+        }
+
+        /* Light Mode */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #ffffff;
+                --text-color: #000000;
+                --border-color: #000000;
+                --button-bg: transparent;
+                --button-hover-bg: rgb(0, 255, 255);
+                --svg-bg: #0000;
+            }
+        }
+
+        /* Dark Mode */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #1e1e1e;
+                --text-color: #ffffff;
+                --border-color: #ffffff;
+                --button-bg: #333333;
+                --button-hover-bg: rgb(0, 150, 150);
+                --svg-bg: #777;
+            }
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Trebuchet MS', Arial, sans-serif;
+        }
+
+        #dataInput {
+            font-family: 'Trebuchet MS', Arial, sans-serif;
+            font-size: 1em;
+            width: 80%;
+            height: 100px;
+            margin: 10px;
+            border: 2px var(--border-color) solid;
+            border-radius: 10px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        #pieChartContainer {
+            border: 2px var(--border-color) solid;
+            border-radius: 10px;
+            position: relative;
+            display: inline-block;
+            background-color: var(--svg-bg);
+        }
+
+        button {
+            font-family: 'Trebuchet MS', Arial, sans-serif;
+            padding: 10px 10px;
+            border: 2px var(--border-color) solid;
+            border-radius: 10px;
+            background-color: var(--button-bg);
+            color: var(--text-color);
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.15s ease-in-out;
+        }
+
+        button:hover {
+            background-color: var(--button-hover-bg);
+            transition: background-color 0.15s ease-in-out;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>Pie Chart Generator</h1>
+    <textarea id="dataInput" placeholder="Enter values as 'name,value' (e.g., 'pizza,235') [new line to add new element]"></textarea>
+    <br>
+    <div id="btn-container">
+        <button id="generateBtn">Generate Pie Chart</button>
+        <button id="downloadBtn">Download Chart</button>
+    </div>
+    <br>
+    <div id="pieChartContainer">
+        <svg id="pieChart" width="300" height="300" viewBox="0 0 300 300" preserveAspectRatio="xMidYMid meet">
+            <circle cx="150" cy="150" r="100" fill="white" stroke="black" stroke-width="1"/>
+            <!-- Pie segments will be dynamically added here -->
+        </svg>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+
+    <script>
+        document.getElementById("generateBtn").addEventListener("click", function () {
+            let dataInput = document.getElementById("dataInput").value.trim();
+            let dataArray = dataInput.split('\n');
+            let data = [];
+            let totalValue = 0;
+            let svgheight = 300;
+
+            // Parse the input values
+            dataArray.forEach(line => {
+                let [name, value] = line.split(',');
+
+                if (name && value) {
+                    // Trim any extra spaces
+                    name = name.trim();
+                    value = value.trim();
+
+                    // Ensure the value is a valid number
+                    let parsedValue = parseInt(value, 10);
+                    if (!isNaN(parsedValue)) {
+                        data.push({
+                            name: name,
+                            value: parsedValue
+                        });
+                        totalValue += parsedValue;
+                    }
+                }
+            });
+
+            if (data.length === 0 || totalValue === 0) {
+                alert("Please enter valid data in the correct format!");
+                return;
+            }
+
+            let values = []
+
+            // Clear existing chart and labels
+            let pieChart = document.getElementById("pieChart");
+            let labelsContainer = document.getElementById("legend");
+            pieChart.innerHTML = '<circle cx="150" cy="150" r="100" fill="white" stroke="black" stroke-width="1"/>';
+            labelsContainer.innerHTML = '';
+
+            // Generate pie chart segments
+            let startAngle = 0;
+            data.forEach((item, index) => {
+                let percentage = (item.value / totalValue) * 100;
+                let endAngle = startAngle + (percentage / 100) * 360;
+
+                // Random color
+                let color = getRandomColor();
+
+                // Create pie chart segment
+                let largeArcFlag = percentage > 50 ? 1 : 0;
+                let startX = 150 + 100 * Math.cos((startAngle - 90) * Math.PI / 180);
+                let startY = 150 + 100 * Math.sin((startAngle - 90) * Math.PI / 180);
+                let endX = 150 + 100 * Math.cos((endAngle - 90) * Math.PI / 180);
+                let endY = 150 + 100 * Math.sin((endAngle - 90) * Math.PI / 180);
+
+                let pathData = `M150,150 L${startX},${startY} A100,100 0 ${largeArcFlag} 1 ${endX},${endY} Z`;
+                let path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', pathData);
+                path.setAttribute('fill', color);
+                pieChart.appendChild(path);
+
+                // Update start angle for next segment
+                startAngle = endAngle;
+
+                values.push({"name":item.name, "color":color, "percentage":percentage.toFixed(2)});
+            });
+
+            const circleCenterX = 150; // X position of the circle center
+            const circleRadius = 100; // Circle radius
+            const startY = 150 + circleRadius + 20; // 20px below the circle
+            const squareSize = 20;
+            const startX = 30;
+            const gap = 10;
+
+            // Calculate the height for labels
+            let labelHeight = values.length * (squareSize + gap); // Total height of labels
+
+            // Calculate the total height
+            svgheight = svgheight + 20 + labelHeight;
+
+            values.forEach((item, index) => {
+                let y =  startY + index * (squareSize + gap);
+
+                let rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                rect.setAttribute("x", startX); // X position (adjust if needed)
+                rect.setAttribute("y", y - 15);
+                rect.setAttribute("width", squareSize);
+                rect.setAttribute("height", squareSize);
+                rect.setAttribute("fill", item.color);
+                rect.setAttribute("stroke", "black");
+                
+                let text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                text.setAttribute("x", squareSize + 10 + startX); // Position text to the right of square
+                text.setAttribute("y", y);
+                text.setAttribute("font-size", `${squareSize}px`);
+                text.textContent = `${item.name}: ${item.percentage}%`;
+
+                // Append elements to SVG
+                pieChart.appendChild(rect);
+                pieChart.appendChild(text);
+            });
+
+            pieChart.setAttribute('height', svgheight);
+            pieChart.setAttribute('viewBox', `0 0 300 ${svgheight}`);
+        });
+
+        // Function to generate a random color
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+        document.getElementById("downloadBtn").addEventListener("click", function () {
+            let svgContent = document.getElementById("pieChart").outerHTML;
+            let blob = new Blob([svgContent], { type: "image/svg+xml" });
+            let link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'pieChart.svg';
+            link.click();
+        });
+    </script>
+</body>
+</html>
