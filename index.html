@@ -117,7 +117,8 @@
                     value = value.trim();
 
                     // Ensure the value is a valid number
-                    let parsedValue = parseInt(value, 10);
+                    let parsedValue = parseFloat(value);
+
                     if (!isNaN(parsedValue)) {
                         data.push({
                             name: name,
@@ -137,9 +138,7 @@
 
             // Clear existing chart and labels
             let pieChart = document.getElementById("pieChart");
-            let labelsContainer = document.getElementById("legend");
             pieChart.innerHTML = '<circle cx="150" cy="150" r="100" fill="white" stroke="black" stroke-width="1"/>';
-            labelsContainer.innerHTML = '';
 
             // Generate pie chart segments
             let startAngle = 0;
